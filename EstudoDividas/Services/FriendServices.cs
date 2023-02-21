@@ -21,17 +21,10 @@ namespace EstudoDividas.Services
             // Essa função gera um registro de amigo no banco
             // ou confirma um registro, caso já exista.
 
-
-            // FILTROS QUE RETORNAM
-            // - ID publico e privado do requerente não bate - falha de autenticação
-            // - ID do usuário e do amigo são iguais
-            // - ID do amigo não existe
-            // - Se este usuário já chamou para amizade
-            // - Se já possui amizade confirmada
-
             // FILTRO = se os ids do Requerente são validos
-            var isValidRequester = _context.User.FromSql($"SELECT * FROM user WHERE id_private = {request.userPrivateId} AND id_public = {request.userPublicId};").ToList().FirstOrDefault();
-            if (isValidRequester == null)
+            var isValidRequester = _context.User.Where(u => u.id_private.Equals(request.userPrivateId) &&
+                                                            u.id_public.Equals(request.userPublicId)).Any();
+            if (!isValidRequester)
                 return new()
                 {
                     status = "bad_auth",
@@ -47,7 +40,7 @@ namespace EstudoDividas.Services
                 };
 
             // FILTRO = se id do amigo existe
-            var friend_exists = _context.User.FromSql($"SELECT * FROM user WHERE id_public = {request.friendPublicId}").Any();
+            var friend_exists = _context.User.Where(u => u.id_public.Equals(request.friendPublicId)).Any();
             if (!friend_exists)
                 return new()
                 {
@@ -56,7 +49,8 @@ namespace EstudoDividas.Services
                 };
 
             // FILTRO = se o usuário já pediu amizade para esse amigo
-            var already_requested = _context.Friend.FromSql($"SELECT * FROM friend WHERE sender = {request.userPublicId} AND receiver = {request.friendPublicId}").Any();
+            var already_requested = _context.Friend.Where(f =>  f.sender.Equals(request.userPublicId) &&
+                                                                f.receiver.Equals(request.friendPublicId)).Any();
             if (already_requested)
                 return new()
                 {
@@ -65,7 +59,13 @@ namespace EstudoDividas.Services
                 };
 
             // FILTRO = se já é amigo confirmado
-            var already_confirmed = _context.Friend.FromSql($"SELECT * FROM friend WHERE ((sender = {request.friendPublicId} AND receiver = {request.userPublicId}) OR (sender = {request.userPublicId} AND receiver = {request.friendPublicId})) AND confirmed = 1").Any();
+            var already_confirmed = _context.Friend.Where(f => f.confirmed.Equals(true))
+
+                                                   .Where(f => (f.sender.   Equals(request.friendPublicId) &&
+                                                                f.receiver. Equals(request.userPublicId)) ||
+
+                                                               (f.sender.   Equals(request.userPublicId) &&
+                                                                f.receiver. Equals(request.friendPublicId))).Any();
             if (already_confirmed)
                 return new()
                 {
@@ -80,10 +80,12 @@ namespace EstudoDividas.Services
 
 
             // Checar se o amigo já solicitou amizade antes
-            var friend_requested = _context.Friend.FromSql($"SELECT * FROM friend WHERE sender = {request.friendPublicId} AND receiver = {request.userPublicId} AND confirmed = 0").ToList().FirstOrDefault();
+            var friend_requested = _context.Friend.Where(f =>   f.sender.Equals(request.friendPublicId) &&
+                                                                f.receiver.Equals(request.userPublicId) &&
+                                                                f.confirmed.Equals(false)).ToList().FirstOrDefault();
             if (friend_requested != null)
             {
-
+                // Fazer um Update no registro existente de amizade
                 friend_requested.confirmed_date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 friend_requested.confirmed = true;
 

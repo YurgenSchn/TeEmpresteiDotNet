@@ -29,7 +29,6 @@ namespace EstudoDividas.Controllers
 
             if (response.status != "ok")
                 return BadRequest(response.message);
-
             return Ok(response.message);
         }
 
@@ -43,7 +42,6 @@ namespace EstudoDividas.Controllers
 
             if (response.status != "ok")
                 return BadRequest(response.message);
-
             return Ok(response.message);
         }
 
@@ -55,7 +53,6 @@ namespace EstudoDividas.Controllers
 
             if (response.status != "ok")
                 return BadRequest(response.message);
-
             return Ok(response);
         }
     }

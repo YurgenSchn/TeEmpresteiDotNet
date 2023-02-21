@@ -21,11 +21,12 @@ namespace EstudoDividas.Services
             _context = context;
         }
 
+
         // Funções principais
         public LoginResponseContract login(LoginRequestContract request)
         {
             // checar se já existe ao menos 1 usuário com este email, depois checar
-            var user = _context.User.FromSql($"SELECT * FROM user WHERE email = {request.email} AND password = {ToSHA384(request.password)};").ToList().FirstOrDefault();
+            var user = _context.User.Where(u => u.email.Equals(request.email) && u.password.Equals(ToSHA384(request.password))).ToList().FirstOrDefault();
             if (user == null)
             {
                 return new()
@@ -37,7 +38,7 @@ namespace EstudoDividas.Services
             }
 
             // obter nome do accesslevel (role)
-            var roleName = _context.AccessLevel.Where(x => x.id.Equals(user.id_access_level)).FirstOrDefault();
+            var roleName = _context.AccessLevel.Where(u => u.id.Equals(user.id_access_level)).FirstOrDefault();
             if (roleName == null)
             {
                 return new()
@@ -77,7 +78,7 @@ namespace EstudoDividas.Services
         public RegisterUserResponseContract registerUser(RegisterUserRequestContract request)
         {
             // checar se já existe ao menos 1 usuário com este email
-            var user = _context.User.FromSql($"SELECT * FROM user WHERE email = {request.email};").ToList().FirstOrDefault();
+            var user = _context.User.Where(u => u.email.Equals(request.email)).ToList().FirstOrDefault();
             if (user != null)
                 return new()
                 {
@@ -91,7 +92,7 @@ namespace EstudoDividas.Services
             var ids = GenerateUserIds();
 
             // Depois, buscar o ID da ROLE
-            var idAccessLevel = _context.AccessLevel.Where(x => x.role.Equals(Roles.usuario)).FirstOrDefault();
+            var idAccessLevel = _context.AccessLevel.Where(a => a.role.Equals(Roles.usuario)).FirstOrDefault();
 
             if (idAccessLevel == null)
                 return new()
@@ -121,6 +122,8 @@ namespace EstudoDividas.Services
                 message = "Usuário cadastrado com sucesso!",
             };
         }
+
+
 
         // Funções utilitárias
         private string[] GenerateUserIds()
@@ -161,7 +164,7 @@ namespace EstudoDividas.Services
             // Claims são "afirmativas" sobre o token
             // Só adicionaremos uma claim: o ROLE dele, nivel de acesso
 
-            var isValidRole = Roles.roles.Where(e => e.Equals(role)).Any();
+            var isValidRole = Roles.roles.Where(r => r.Equals(role)).Any();
 
             if (!isValidRole)
             {
@@ -192,11 +195,13 @@ namespace EstudoDividas.Services
 
         public static string GenerateRandomString(int length) //max length = 64
         {
-            string full_length_64 = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48));
-            return full_length_64.Substring(0, Math.Min(length, full_length_64.Length));
-            // Cada caractere é 6 bits de dados.
-            // 6   * 64  = 384 bits
-            // 384 / 8   = 48  bytes
+            // Cada caracter é 6 bits
+            int necessaryBytes  = length * 6;
+            // Fazendo a conversão para bytes (8 bits), mas sem descartar casa decimal.
+            necessaryBytes = (int)(Math.Ceiling(necessaryBytes / 8f)); 
+
+            string randomString = Convert.ToBase64String(RandomNumberGenerator.GetBytes(necessaryBytes));
+            return randomString.Substring(0, Math.Min(length, randomString.Length));
         }
 
         public static string ToSHA384(string value)
