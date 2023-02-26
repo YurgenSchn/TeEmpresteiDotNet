@@ -8,7 +8,7 @@ using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace EstudoDividas.Controllers
 {
-    [Route("api/payment")]
+    [Route("api/[controller]")]
     [ApiController]
     public class PaymentController : ControllerBase
     {
@@ -20,6 +20,8 @@ namespace EstudoDividas.Controllers
             _paymentServices = paymentServices;
         }
 
+
+        // POST: api/Payment/pay_friend
         [Authorize(Roles = Roles.usuario)]
         [HttpPost("pay_friend")]
         public IActionResult payFriend([FromBody] PayFriendRequestContract request)
@@ -28,11 +30,12 @@ namespace EstudoDividas.Controllers
             var response = _paymentServices.payFriend(request);
 
             if (response.status != "ok")
-                return BadRequest(response.message);
-            return Ok(response.message);
+                return BadRequest(response);
+            return Ok(response);
         }
 
 
+        // POST: api/Payment/confirm
         [Authorize(Roles = Roles.usuario)]
         [HttpPost("confirm")]
         public IActionResult confirmPayment([FromBody] ConfirmPaymentRequestContract request)
@@ -41,10 +44,12 @@ namespace EstudoDividas.Controllers
             var response = _paymentServices.confirmPayment(request);
 
             if (response.status != "ok")
-                return BadRequest(response.message);
-            return Ok(response.message);
+                return BadRequest(response);
+            return Ok(response);
         }
 
+
+        // GET: api/Payment/history
         [Authorize(Roles = Roles.usuario)]
         [HttpGet("history")]
         public IActionResult getPaymentHistory(string userPublicId)
@@ -52,7 +57,7 @@ namespace EstudoDividas.Controllers
             var response = _paymentServices.getPaymentHistory(userPublicId);
 
             if (response.status != "ok")
-                return BadRequest(response.message);
+                return BadRequest(response);
             return Ok(response);
         }
     }

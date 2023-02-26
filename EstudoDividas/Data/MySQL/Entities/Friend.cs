@@ -20,7 +20,7 @@ namespace EstudoDividas.Data.MySQL.Entities
         public bool confirmed { get; set; }
 
         [Column("confirmed_date")]
-        public string confirmed_date { get; set; } // CONVERSION MIGHT BE NECESSARY
+        public string? confirmed_date { get; set; } // CONVERSION MIGHT BE NECESSARY
 
     }
 }

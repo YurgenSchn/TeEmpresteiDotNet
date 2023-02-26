@@ -165,22 +165,28 @@ namespace EstudoDividas.Services
             }
 
             var payments = (from p in _context.Payment
+                            join us in _context.User on p.sender equals us.id_public
+                            join ur in _context.User on p.receiver equals ur.id_public
+                            orderby p.sent_date
                             where (p.sender == userPublicId) ||
                                   (p.receiver == userPublicId)
                             select new PaymentReturnType
                             {
+                                id = p.id,
                                 value = p.value,
                                 description = p.description,
                                 date = p.sent_date,
-                                receiver = p.receiver,
-                                sender = p.sender,
+                                receiver_id = p.receiver,
+                                receiver_name = ur.name,
+                                sender_id = p.sender,
+                                sender_name = us.name,
                                 confirmed = p.confirmed
                             });
 
             if (friendPublicId != "")
             {
-                payments = payments.Where(p => (p.sender.Equals(userPublicId)   && p.receiver.Equals(friendPublicId)) ||
-                                                p.sender.Equals(friendPublicId) && p.receiver.Equals(userPublicId));
+                payments = payments.Where(p => (p.sender_id.Equals(userPublicId)   && p.receiver_id.Equals(friendPublicId)) ||
+                                                p.sender_id.Equals(friendPublicId) && p.receiver_id.Equals(userPublicId));
             }
 
 

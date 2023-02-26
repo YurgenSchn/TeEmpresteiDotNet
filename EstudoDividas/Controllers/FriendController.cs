@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EstudoDividas.Controllers
 {
-    [Route("api/friend")]
+    [Route("api/[controller]")]
     [ApiController]
     public class FriendController : ControllerBase
     {
@@ -16,6 +16,8 @@ namespace EstudoDividas.Controllers
             _friendServices = friendServices;
         }
 
+
+        // POST: api/friend/add
         [Authorize(Roles = Roles.usuario)]
         [HttpPost("add")]
         public IActionResult addFriend([FromBody] AddFriendRequestContract request)
@@ -24,18 +26,20 @@ namespace EstudoDividas.Controllers
             var response = _friendServices.addFriend(request);
 
             if (response.status != "ok")
-                return BadRequest(response.message);
-            return Ok(response.message);
+                return BadRequest(response);
+            return Ok(response);
         }
 
+
+        // GET: api/friend/list
         [Authorize(Roles = Roles.usuario)]
-        [HttpGet("get_list")]
+        [HttpGet("list")]
         public IActionResult getFriends(string userPublicId, string mode)
         {
             var response = _friendServices.getFriends(userPublicId, mode);
 
             if (response.status != "ok")
-                return BadRequest(response.message);
+                return BadRequest(response);
             return Ok(response);
         }
     }

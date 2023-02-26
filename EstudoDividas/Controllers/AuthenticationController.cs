@@ -6,7 +6,7 @@ using EstudoDividas.Constants;
 
 namespace EstudoDividas.Controllers
 {
-    [Route("api/auth")]
+    [Route("api/[controller]")]
     [ApiController]
     public class AuthenticationController : ControllerBase
     {
@@ -19,17 +19,17 @@ namespace EstudoDividas.Controllers
             _authServices = authServices;
         }
 
-        // POST: api/auth/register
+        // POST: api/Authentication/register
         [HttpPost("register")]
         public IActionResult Register([FromBody] RegisterUserRequestContract request)
         {
             var response = _authServices.registerUser(request);
             if (response.status != "ok")
-                return BadRequest(response.message);
-            return Ok(response.message);
+                return BadRequest(response);
+            return Ok(response);
         }
 
-        // POST: Testar token usuario
+        // POST: api/authentication/testtoken
         [Authorize(Roles = Roles.usuario)]
         [HttpPost("testToken")]
         public IActionResult testToken()
@@ -38,14 +38,14 @@ namespace EstudoDividas.Controllers
         }
 
 
-        // POST: api/auth/login
+        // POST: api/Authentication/login
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequestContract request)
         {
             var response = _authServices.login(request);
 
             if (response.status != "ok")
-                return BadRequest(response.message);
+                return BadRequest(response);
             return Ok(response);
         }
 

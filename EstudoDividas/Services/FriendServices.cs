@@ -82,7 +82,7 @@ namespace EstudoDividas.Services
             // Checar se o amigo já solicitou amizade antes
             var friend_requested = _context.Friend.Where(f =>   f.sender.Equals(request.friendPublicId) &&
                                                                 f.receiver.Equals(request.userPublicId) &&
-                                                                f.confirmed.Equals(false)).ToList().FirstOrDefault();
+                                                                f.confirmed.Equals(false)).FirstOrDefault();
             if (friend_requested != null)
             {
                 // Fazer um Update no registro existente de amizade
