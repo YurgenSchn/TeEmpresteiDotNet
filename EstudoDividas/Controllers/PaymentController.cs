@@ -50,7 +50,7 @@ namespace EstudoDividas.Controllers
 
 
         // GET: api/Payment/history
-        [Authorize(Roles = Roles.usuario)]
+        //[Authorize(Roles = Roles.usuario)]
         [HttpGet("history")]
         public IActionResult getPaymentHistory(string userPublicId)
         {
