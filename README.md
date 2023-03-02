@@ -1,12 +1,5 @@
-# TeEmpresteiDotNet
-Este é um projeto de estudos de .NET, ASP.NET e Angular. Aqui estou explorando API's RESTful no back-end em dotNet, e arriscando algum front-end com TypeScript e Angular.
-
-##
-
-### Sobre o Estudo
-Do ponto de vista do estudo, busco aperfeiçoar conhecimentos brutos sobre o API's em dotNet, explorando arquiteturas, pacotes mais usados e boas práticas - além de explorar as ferramentas oferecidas pelo TypeScript e Angular no front-end, para prototipar/aperfeiçoar a ideia a nível de usabilidade.
-
-Possuindo um protótipo com modelagem e usabilidade refinadas, pretendo recriar o aplicativo em uma stack amigável para mobile, talvez React, React Native e Nodejs.
+# Te Emprestei (.NET e Angular)
+Este é um projeto de estudos de .NET, ASP.NET e Angular. Aqui estou explorando API's RESTful no back-end em dotNet, e arriscando algum front-end com Angular. Pretendo recriar esta ideia em uma aplicação mobile.
 
 ##
 
@@ -18,11 +11,11 @@ Quando um usuário "paga" para outro, o sistema calcula o valor emprestado e rec
 
 ![Current Front-Page](https://cdn.discordapp.com/attachments/1072630091529601106/1079858592183754903/Web_app.png)
 
-*Sobre o estado atual (27/02/23):
-O saldo é feito no front-end, com os pagamentos que já são enviados para a lista.
-Ainda não montei o front para login. Portanto, o usuário está hardcoded no typescript para fazer o Http Request.
-O endpoint do histórico está com a autenticação desabilitada (para o front).
-Funções do back-end precisam ser assíncronas.
+👷‍♂️ Estado atual (01/03/23):
+
+- O saldo é calculado no front-end, usando os pagamentos que já são enviados para a lista.
+- Funções do back-end precisam ser assíncronas.
+- Roles precisam ser pré-cadastrados no banco de dados ("usuario" e "admin" na tabela access_level)
 
 ##
 
