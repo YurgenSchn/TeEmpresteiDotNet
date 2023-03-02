@@ -3,6 +3,7 @@ using EstudoDividas.Data.MySQL.Entities;
 using EstudoDividas.Data.MySQL;
 using Microsoft.EntityFrameworkCore;
 using EstudoDividas.Contracts.ReturnTypes;
+using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace EstudoDividas.Services
 {
@@ -16,61 +17,77 @@ namespace EstudoDividas.Services
         }
 
         // Funções principais
-        public AddFriendResponseContract addFriend(AddFriendRequestContract request)
+        public async Task<AddFriendResponseContract> addFriend(AddFriendRequestContract request)
         {
-            // Essa função gera um registro de amigo no banco
-            // ou confirma um registro, caso já exista.
+            // CRIA ou CONFIRMA registro de amizade entre dois usuários.
 
-            // FILTRO = se os ids do Requerente são validos
-            var isValidRequester = _context.User.Where(u => u.id_private.Equals(request.userPrivateId) &&
-                                                            u.id_public.Equals(request.userPublicId)).Any();
-            if (!isValidRequester)
+
+            // FILTROS PARA INVALIDAR O REQUEST:
+            //    a. se algum id está vazio
+            //    b. se os ids do Requerente e Amigo são iguais
+            //    c. se os ids do Requerente são inválidos
+            //    d. se id do amigo não existe
+            //    e. se o Requerente já pediu amizade antes
+            //    f. se já são amigos confirmados
+
+            if (request.userPublicId == "" || request.userPrivateId == "" || request.friendPublicId == "")
                 return new()
                 {
-                    status = "bad_auth",
-                    message = "autenticação inválida"
+                    status = "invalid_empty",
+                    message = "Usuário ou amigo inexistente."
                 };
 
-            // FILTRO = se os ids seu e do amigo forem iguais
             if (request.userPublicId == request.friendPublicId)
                 return new()
                 {
                     status = "invalid_self_add",
-                    message = "Não é possível se adicionar como amigo"
+                    message = "Não é possível se adicionar como amigo."
                 };
 
-            // FILTRO = se id do amigo existe
-            var friend_exists = _context.User.Where(u => u.id_public.Equals(request.friendPublicId)).Any();
-            if (!friend_exists)
-                return new()
-                {
-                    status = "inexistent_friend",
-                    message = "Amigo inexistente"
-                };
+            // ASYNC REQUESTS
+            var isValidRequester = _context.User.Where(u => u.id_private.Equals(request.userPrivateId) &&
+                                                            u.id_public. Equals(request.userPublicId)).AnyAsync();
 
-            // FILTRO = se o usuário já pediu amizade para esse amigo
-            var already_requested = _context.Friend.Where(f =>  f.sender.Equals(request.userPublicId) &&
-                                                                f.receiver.Equals(request.friendPublicId)).Any();
-            if (already_requested)
+            var friendExists     = _context.User.Where(u => u.id_public.Equals(request.friendPublicId)).AnyAsync();
+
+            var alreadyRequested = _context.Friend.Where(f =>  f.sender.  Equals(request.userPublicId) &&
+                                                               f.receiver.Equals(request.friendPublicId)).AnyAsync();
+
+            var alreadyConfirmed = _context.Friend.Where(f => f.confirmed.Equals(true))
+
+                                                  .Where(f => (f.sender.Equals(request.friendPublicId) &&
+                                                               f.receiver.Equals(request.userPublicId)) ||
+
+                                                              (f.sender.Equals(request.userPublicId) &&
+                                                               f.receiver.Equals(request.friendPublicId))).AnyAsync();
+
+            // AWAIT RESPONSES
+            if (await alreadyRequested)
                 return new()
                 {
                     status = "already_requested",
                     message = "Já solicitou amizade à esse usuário"
                 };
 
-            // FILTRO = se já é amigo confirmado
-            var already_confirmed = _context.Friend.Where(f => f.confirmed.Equals(true))
-
-                                                   .Where(f => (f.sender.   Equals(request.friendPublicId) &&
-                                                                f.receiver. Equals(request.userPublicId)) ||
-
-                                                               (f.sender.   Equals(request.userPublicId) &&
-                                                                f.receiver. Equals(request.friendPublicId))).Any();
-            if (already_confirmed)
+            if (await alreadyConfirmed)
                 return new()
                 {
                     status = "already_confirmed_friends",
                     message = "Já possui amizade confirmada com esse usuário"
+                };
+
+            if (!await isValidRequester)
+                return new()
+                {
+                    status = "bad_auth",
+                    message = "autenticação inválida"
+                };
+
+            if (!await friendExists)
+                return new()
+                {
+                    status = "inexistent_friend",
+                    message = "Amigo inexistente"
                 };
 
 
@@ -89,7 +106,7 @@ namespace EstudoDividas.Services
                 friend_requested.confirmed_date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 friend_requested.confirmed = true;
 
-                _context.SaveChanges();
+                _context.SaveChangesAsync();
 
                 return new()
                 {
@@ -108,7 +125,7 @@ namespace EstudoDividas.Services
             };
 
             _context.Friend.Add(friend);
-            _context.SaveChanges();
+            _context.SaveChangesAsync();
 
             return new()
             {
@@ -118,7 +135,7 @@ namespace EstudoDividas.Services
 
         }
 
-        public GetUserFriendsResponseContract getFriends(string userPublicId, string mode = "confirmed")
+        public async Task<GetUserFriendsResponseContract> getFriends(string userPublicId, string userPrivateId, string mode = "confirmed")
         {
 
             // Esta função consulta os amigos de um usuário
@@ -127,18 +144,21 @@ namespace EstudoDividas.Services
             //   'pending_sent'     = amizades pendentes (que ele solicitou)
             //   'pending_received' = amizades pendentes (que ele recebeu)
 
-            //FILTRO DE USUARIO VAZIO
-            if (userPublicId == "")
+            //FILTRO DE USUÁRIO VÁLIDO
+            var isValidRequester = _context.User.Where(u => u.id_private.Equals(userPrivateId) &&
+                                                            u.id_public.Equals(userPublicId)).AnyAsync();
+
+            if(! await isValidRequester)
                 return new()
                 {
-                    status = "empty_request",
-                    message = "Pedido invalido, sem usuário ou modo"
+                    status = "invalid_user",
+                    message = "Não é possível listar amigos, usuário inválido."
                 };
 
             // QUERY PARA AMIGOS CONFIRMADOS
             if (mode == "confirmed")
             {
-                var friends =   // Amigos que receberam convite do usuário: da tabela de amigos, os RECEIVERS
+                var friends = await  // Amigos que receberam convite do usuário: da tabela de amigos, os RECEIVERS
                             (from f in _context.Friend
                              join u_receiver in _context.User on f.receiver equals u_receiver.id_public
                              where (f.sender == userPublicId) &&
@@ -151,7 +171,6 @@ namespace EstudoDividas.Services
                              })
 
                             // Amigos que convidaram o usuário: da tabela de amigos, os SENDERS
-
                             .Concat(
                             (from f in _context.Friend
                              join u_sender in _context.User on f.sender equals u_sender.id_public
@@ -163,7 +182,7 @@ namespace EstudoDividas.Services
                                  name = u_sender.name,
                                  friendshipDate = f.confirmed_date
                              })
-                            ).ToList();
+                            ).ToListAsync();
 
                 return new()
                 {
@@ -176,7 +195,7 @@ namespace EstudoDividas.Services
             // QUERY PARA AMIGOS PENDENTES SENT
             if (mode == "pending_sent")
             {
-                var friends =   // Amigos que receberam convite do usuário (sem confirmar): da tabela de amigos, os RECEIVERS
+                var friends = await  // Amigos que receberam convite do usuário (sem confirmar): da tabela de amigos, os RECEIVERS
                             (from f in _context.Friend
                              join u_receiver in _context.User on f.receiver equals u_receiver.id_public
                              where (f.sender == userPublicId) &&
@@ -186,7 +205,7 @@ namespace EstudoDividas.Services
                                  userPublicId = f.receiver,
                                  name = u_receiver.name,
                                  friendshipDate = f.confirmed_date
-                             }).ToList();
+                             }).ToListAsync();
 
                 return new()
                 {
@@ -199,7 +218,7 @@ namespace EstudoDividas.Services
             // QUERY PARA AMIGOS PENDENTES RECEIVED
             if (mode == "pending_received")
             {
-                var friends =
+                var friends = await
                             // Amigos que convidaram o usuário (mas ele nao confirmou): da tabela de amigos, os SENDERS
                             (from f in _context.Friend
                              join u_sender in _context.User on f.sender equals u_sender.id_public
@@ -210,7 +229,7 @@ namespace EstudoDividas.Services
                                  userPublicId = f.sender,
                                  name = u_sender.name,
                                  friendshipDate = f.confirmed_date
-                             }).ToList();
+                             }).ToListAsync();
 
                 return new()
                 {

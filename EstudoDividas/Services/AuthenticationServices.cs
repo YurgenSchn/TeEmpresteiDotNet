@@ -23,10 +23,10 @@ namespace EstudoDividas.Services
 
 
         // Funções principais
-        public LoginResponseContract login(LoginRequestContract request)
+        public async Task<LoginResponseContract> login(LoginRequestContract request)
         {
             // checar se já existe ao menos 1 usuário com este email, depois checar
-            var user = _context.User.Where(u => u.email.Equals(request.email) && u.password.Equals(ToSHA384(request.password))).ToList().FirstOrDefault();
+            var user = await _context.User.Where(u => u.email.Equals(request.email) && u.password.Equals(ToSHA384(request.password))).FirstOrDefaultAsync();
             if (user == null)
             {
                 return new()
@@ -38,18 +38,18 @@ namespace EstudoDividas.Services
             }
 
             // obter nome do accesslevel (role)
-            var roleName = _context.AccessLevel.Where(u => u.id.Equals(user.id_access_level)).FirstOrDefault();
+            var roleName = await _context.AccessLevel.Where(u => u.id.Equals(user.id_access_level)).FirstOrDefaultAsync();
             if (roleName == null)
             {
                 return new()
                 {
                     status = "invalid_role",
-                    message = "Usuário Corrompido.",
+                    message = "Usuário Corrompido. Access Level inválido.",
                     //empty fields
                 };
             }
 
-            // testar se o token pode ser criado usando o role obtido
+            // CRIAR O TOKEN COM A ROLE DO BANCO DE DADOS
             string token = CreateToken(roleName.role);
 
             if (string.IsNullOrEmpty(token))
@@ -75,31 +75,37 @@ namespace EstudoDividas.Services
 
         }
 
-        public RegisterUserResponseContract registerUser(RegisterUserRequestContract request)
+        public async Task<RegisterUserResponseContract> registerUser(RegisterUserRequestContract request)
         {
-            // checar se já existe ao menos 1 usuário com este email
-            var user = _context.User.Where(u => u.email.Equals(request.email)).ToList().FirstOrDefault();
-            if (user != null)
+            // CHAMADAS ASSÍNCRONAS
+            // a. checar se já existe ao menos 1 usuário com este email
+            // b. checar se já a role está cadastrada no banco de dados
+            var taskEmailIsUsed = _context.User.Where(u => u.email.Equals(request.email)).AnyAsync();
+            var taskIdAccessLevel = _context.AccessLevel.Where(a => a.role.Equals(Roles.usuario)).FirstOrDefaultAsync();
+
+
+            // RETORNO ASSÍNCRONO
+            var emailIsUsed   = await taskEmailIsUsed;
+            var idAccessLevel = await taskIdAccessLevel;
+
+            // VALIDAÇÕES DE EMAIL E ROLE NO BANCO
+            if (emailIsUsed)
                 return new()
                 {
                     status = "existing_email",
                     message = "Usuário já cadastrado.",
                 };
 
-            // Criar novo usuário
-
-            // Primeiro, gerar os ids publico e privado
-            var ids = GenerateUserIds();
-
-            // Depois, buscar o ID da ROLE
-            var idAccessLevel = _context.AccessLevel.Where(a => a.role.Equals(Roles.usuario)).FirstOrDefault();
-
             if (idAccessLevel == null)
                 return new()
                 {
                     status = "internal_role_error",
-                    message = "Internal error.",
+                    message = "Internal error - registro de access_level 'usuario' ausente na base de dados.",
                 };
+
+
+            // CRIAR NOVO USUÁRIO
+            var ids = GenerateUserIds();
 
             User newUser = new()
             {
@@ -111,11 +117,10 @@ namespace EstudoDividas.Services
                 id_access_level = idAccessLevel.id
             };
 
-            // Adicionar registro ao banco de dados
+            // ADICIONAR AO BANCO - Não precisa de await depois de salvar
             _context.User.Add(newUser);
-            _context.SaveChanges();
+            _context.SaveChangesAsync();  
 
-            // Retornar reponse ao controller
             return new()
             {
                 status = "ok",

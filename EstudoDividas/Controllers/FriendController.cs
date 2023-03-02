@@ -20,10 +20,10 @@ namespace EstudoDividas.Controllers
         // POST: api/friend/add
         [Authorize(Roles = Roles.usuario)]
         [HttpPost("add")]
-        public IActionResult addFriend([FromBody] AddFriendRequestContract request)
+        public async Task<IActionResult> addFriend([FromBody] AddFriendRequestContract request)
         {
 
-            var response = _friendServices.addFriend(request);
+            var response = await _friendServices.addFriend(request);
 
             if (response.status != "ok")
                 return BadRequest(response);
@@ -34,9 +34,9 @@ namespace EstudoDividas.Controllers
         // GET: api/friend/list
         [Authorize(Roles = Roles.usuario)]
         [HttpGet("list")]
-        public IActionResult getFriends(string userPublicId, string mode)
+        public async Task<IActionResult> getFriends(string userPublicId, string userPrivateId, string mode)
         {
-            var response = _friendServices.getFriends(userPublicId, mode);
+            var response = await _friendServices.getFriends(userPublicId, userPrivateId, mode);
 
             if (response.status != "ok")
                 return BadRequest(response);

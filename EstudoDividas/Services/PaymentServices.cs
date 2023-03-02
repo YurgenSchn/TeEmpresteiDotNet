@@ -4,6 +4,7 @@ using EstudoDividas.Data.MySQL;
 using Microsoft.EntityFrameworkCore;
 using EstudoDividas.Contracts.ReturnTypes;
 using Org.BouncyCastle.Asn1.Ocsp;
+using System.Globalization;
 
 namespace EstudoDividas.Services
 {
@@ -17,20 +18,19 @@ namespace EstudoDividas.Services
         }
 
         // Funções principais
-        public PayFriendResponseContract payFriend(PayFriendRequestContract request)
+        public async Task<PayFriendResponseContract> payFriend(PayFriendRequestContract request)
         {
 
-            // FILTRO = se o private-public ids do requerente não baterem
-            var isValidRequester = _context.User.Where(u => u.id_private.Equals(request.userPrivateId) &&
-                                                            u.id_public.Equals(request.userPublicId)).Any();
-            if (!isValidRequester)
-                return new()
-                {
-                    status = "bad_auth",
-                    message = "Autenticação inválida"
-                };
+            // Um amigo paga o outro, definindo um valor e descrição
 
-            // FILTRO = se os ids seu e do amigo forem iguais
+            // FILTROS QUE RETORNAM REQUEST INVÁLIDO
+            //   a. Tentando pagar para si mesmo
+            //   b. Valor ou descrição inválidas
+            //   c. Ids do Requerente são inválidos
+            //   d. Id do amigo não existe
+            //   e. não possui amizade confirmada
+
+
             if (request.userPublicId == request.friendPublicId)
                 return new()
                 {
@@ -38,28 +38,6 @@ namespace EstudoDividas.Services
                     message = "Não é possível pagar para si próprio."
                 };
 
-            // FILTRO = se id do amigo existe
-            var friend_exists = _context.User.Where(u => u.id_public.Equals(request.friendPublicId)).Any();
-            if (!friend_exists)
-                return new()
-                {
-                    status = "inexistent_friend",
-                    message = "Amigo inexistente"
-                };
-
-            // FILTRO = se tem amizade confirmada
-            var isConfirmedFriend = _context.Friend.Where(f => f.confirmed == true &&
-                                                               f.sender == request.userPublicId && f.receiver == request.friendPublicId ||
-                                                               f.sender == request.friendPublicId && f.receiver == request.userPublicId).Any();
-
-            if (!isConfirmedFriend)
-                return new()
-                {
-                    status = "not_friends",
-                    message = "Este usuário não é seu amigo."
-                };
-
-            // FILTRO = se o valor for inválido (de acordo com o banco de dados)
             if (request.value <= 0 || request.value > 9999999999)
                 return new()
                 {
@@ -67,7 +45,6 @@ namespace EstudoDividas.Services
                     message = "Valor inválido"
                 };
 
-            // FILTRO = Sem descrição
             if (request.description == null || request.description.Length == 0)
                 return new()
                 {
@@ -75,7 +52,40 @@ namespace EstudoDividas.Services
                     message = "Sem descrição de pagamento"
                 };
 
-            // Adicionar Pagamento
+            //QUERIES ASSÍNCRONAS
+            var isValidRequester  = _context.User.Where(u => u.id_private.Equals(request.userPrivateId) &&
+                                                            u.id_public.Equals(request.userPublicId)).AnyAsync();
+
+            var friend_exists     = _context.User.Where(u => u.id_public.Equals(request.friendPublicId)).AnyAsync();
+
+            var isConfirmedFriend = _context.Friend.Where(f => f.confirmed == true &&
+                                                               f.sender == request.userPublicId && f.receiver == request.friendPublicId ||
+                                                               f.sender == request.friendPublicId && f.receiver == request.userPublicId).AnyAsync();
+
+
+            // RETORNOS AWAIT
+            if (!await isValidRequester)
+                return new()
+                {
+                    status = "bad_auth",
+                    message = "Autenticação inválida"
+                };
+
+            if (! await friend_exists)
+                return new()
+                {
+                    status = "inexistent_friend",
+                    message = "Amigo inexistente"
+                };
+
+            if (! await isConfirmedFriend)
+                return new()
+                {
+                    status = "not_friends",
+                    message = "Este usuário não é seu amigo."
+                };
+
+            // ADICIONAR PAGAMENTO
             Payment payment = new()
             {
                 description = request.description,
@@ -87,7 +97,7 @@ namespace EstudoDividas.Services
             };
 
             _context.Payment.Add(payment);
-            _context.SaveChanges();
+            _context.SaveChangesAsync();
 
             return new()
             {
@@ -97,24 +107,30 @@ namespace EstudoDividas.Services
 
         }
 
-        public ConfirmPaymentResponseContract confirmPayment(ConfirmPaymentRequestContract request)
+        public async Task<ConfirmPaymentResponseContract> confirmPayment(ConfirmPaymentRequestContract request)
         {
-            // VALIDAÇÕES QUE RETORNAM
+            // Usuário referencia um pagamento que recebeu para confirmar
 
-            // FILTRO = se o private-public ids do requerente não baterem
+            // VALIDAÇÕES QUE RETORNAM
+            //   - Ids do Requerente não batem.
+            //   - Pagamento inválido: id não existe, já foi confirmado, ou quem recebeu foi outro usuario
+            //   - Se quem fez o pagamento não é amigo (deve ser, mas só por precaução)
+
             var isValidRequester = _context.User.Where(u => u.id_private.Equals(request.userPrivateId) &&
-                                                            u.id_public.Equals(request.userPublicId)).Any();
-            if (!isValidRequester)
+                                                            u.id_public.Equals(request.userPublicId)).AnyAsync();
+
+            if (!await isValidRequester)
                 return new()
                 {
                     status = "bad_auth",
                     message = "Autenticação inválida"
                 };
 
-            // FILTRO = Pagamento invalido de alguma forma: id não existe, já foi confirmado, ou quem recebeu foi outro usuario
-            var payment = _context.Payment.Where(p =>  p.id.Equals(request.paymentId) &&
+
+            var payment = await _context.Payment.Where(p => p.id.Equals(request.paymentId) &&
                                                        p.confirmed.Equals(false) &&
-                                                       p.receiver.Equals(request.userPublicId)).FirstOrDefault();
+                                                       p.receiver.Equals(request.userPublicId)).FirstOrDefaultAsync();
+
             if (payment == null)
                 return new()
                 {
@@ -122,20 +138,24 @@ namespace EstudoDividas.Services
                     message = "Pagamento Inválido"
                 };
 
-            // FILTRO = Checar se quem fez o pagamento é amigo (deve ser, só uma camada de segurança)
+
             var senderIsFriend = _context.Friend.Where(f => f.confirmed.Equals(true) &&
-                                                            (f.sender.Equals(request.userPublicId) && f.receiver.Equals(payment.sender)) ||
-                                                            (f.sender.Equals(payment.sender) && f.receiver.Equals(request.userPublicId))).Any();
-            if (!senderIsFriend)
+                                                (f.sender.Equals(request.userPublicId) && f.receiver.Equals(payment.sender)) ||
+                                                (f.sender.Equals(payment.sender) && f.receiver.Equals(request.userPublicId))).AnyAsync();
+
+            if (! await senderIsFriend)
                 return new()
                 {
                     status = "fraudlent_payment",
                     message = "Pagamento realizado sem amizade confirmada. Checar com o administrador"
                 };
 
+
+            // CONFIRMAR O PAGAMENTO
+
             payment.confirmed = true;
             payment.confirmed_date = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            _context.SaveChanges();
+            _context.SaveChangesAsync();
 
             return new()
             {
@@ -145,11 +165,11 @@ namespace EstudoDividas.Services
 
         }
 
-        public GetPaymentHistoryResponseContract getPaymentHistory(string userPublicId, string userPrivateId, string friendPublicId = "")
+        public async Task<GetPaymentHistoryResponseContract> getPaymentHistory(string userPublicId, string userPrivateId, string friendPublicId = "")
         {
             // FILTRO = se o private-public ids do requerente não baterem
-            var isValidRequester = _context.User.Where(u => u.id_private.Equals(userPrivateId) &&
-                                                            u.id_public.Equals(userPublicId)).Any();
+            var isValidRequester = await _context.User.Where(u => u.id_private.Equals(userPrivateId) &&
+                                                            u.id_public.Equals(userPublicId)).AnyAsync();
             if (!isValidRequester)
                 return new()
                 {
@@ -157,12 +177,13 @@ namespace EstudoDividas.Services
                     message = "Autenticação inválida"
                 };
 
-            // Checar se o id de amigo é valido
+            
             if (friendPublicId != "")
             {
-                var isFriend = _context.Friend.Where(f => f.confirmed.Equals(true))
+                // Caso seja um request de histórico com um amigo, verificar se o ID do amigo é valido
+                var isFriend = await _context.Friend.Where(f => f.confirmed.Equals(true))
                                               .Where(f => f.sender.Equals(friendPublicId) && f.receiver.Equals(userPublicId) ||
-                                                          f.sender.Equals(userPublicId)   && f.receiver.Equals(friendPublicId)).Any();
+                                                          f.sender.Equals(userPublicId)   && f.receiver.Equals(friendPublicId)).AnyAsync();
                 if (!isFriend) return new()
                 {
                     status = "invalid_friend",
@@ -170,6 +191,8 @@ namespace EstudoDividas.Services
                 };
             }
 
+
+            // OBTER HISTÓRICO DE PAGAMENTO (mas não formar lista em memória ainda)
             var payments = (from p in _context.Payment
                             join us in _context.User on p.sender equals us.id_public
                             join ur in _context.User on p.receiver equals ur.id_public
@@ -189,6 +212,7 @@ namespace EstudoDividas.Services
                                 confirmed = p.confirmed
                             });
 
+            //  FILTRAR POR AMIGO, SE TIVER O PARAMETRO
             if (friendPublicId != "")
             {
                 payments = payments.Where(p => (p.sender_id.Equals(userPublicId)   && p.receiver_id.Equals(friendPublicId)) ||
@@ -198,7 +222,7 @@ namespace EstudoDividas.Services
 
             return new()
             {
-                payments = payments.ToList(),
+                payments = payments.ToList(), // Criar lista na memória.
                 status = "ok",
                 message = "Histórico de pagamentos coletados com sucesso."
             };

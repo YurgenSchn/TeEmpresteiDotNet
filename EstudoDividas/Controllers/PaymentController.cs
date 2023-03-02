@@ -24,10 +24,10 @@ namespace EstudoDividas.Controllers
         // POST: api/Payment/pay_friend
         [Authorize(Roles = Roles.usuario)]
         [HttpPost("pay_friend")]
-        public IActionResult payFriend([FromBody] PayFriendRequestContract request)
+        public async Task<IActionResult> payFriend([FromBody] PayFriendRequestContract request)
         {
 
-            var response = _paymentServices.payFriend(request);
+            var response = await _paymentServices.payFriend(request);
 
             if (response.status != "ok")
                 return BadRequest(response);
@@ -38,10 +38,10 @@ namespace EstudoDividas.Controllers
         // POST: api/Payment/confirm
         [Authorize(Roles = Roles.usuario)]
         [HttpPost("confirm")]
-        public IActionResult confirmPayment([FromBody] ConfirmPaymentRequestContract request)
+        public async Task<IActionResult> confirmPayment([FromBody] ConfirmPaymentRequestContract request)
         {
 
-            var response = _paymentServices.confirmPayment(request);
+            var response = await _paymentServices.confirmPayment(request);
 
             if (response.status != "ok")
                 return BadRequest(response);
@@ -52,9 +52,9 @@ namespace EstudoDividas.Controllers
         // GET: api/Payment/history
         [Authorize(Roles = Roles.usuario)]
         [HttpGet("history")]
-        public IActionResult getPaymentHistory(string userPublicId, string userPrivateId)
+        public async Task<IActionResult> getPaymentHistory(string userPublicId, string userPrivateId)
         {
-            var response = _paymentServices.getPaymentHistory(userPublicId, userPrivateId);
+            var response = await _paymentServices.getPaymentHistory(userPublicId, userPrivateId);
 
             if (response.status != "ok")
                 return BadRequest(response);
