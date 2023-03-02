@@ -11,11 +11,10 @@ Quando um usuário "paga" para outro, o sistema calcula o valor emprestado e rec
 
 ![Current Front-Page](https://cdn.discordapp.com/attachments/1072630091529601106/1079858592183754903/Web_app.png)
 
-👷‍♂️ Estado atual (01/03/23):
+👷‍♂️ Estado atual (02/03/23):
 
 - O saldo é calculado no front-end, usando os pagamentos que já são enviados para a lista.
-- Funções do back-end precisam ser assíncronas.
-- Roles precisam ser pré-cadastrados no banco de dados ("usuario" e "admin" na tabela access_level)
+- Melhorar sistema de roles, precisa pré-cadastradar no banco de dados ("usuario" e "admin" na tabela access_level)
 
 ##
 
