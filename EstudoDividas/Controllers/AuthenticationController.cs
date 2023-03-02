@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using EstudoDividas.Services;
 using Microsoft.AspNetCore.Authorization;
 using EstudoDividas.Constants;
+using Microsoft.AspNetCore.Cors;
 
 namespace EstudoDividas.Controllers
 {
@@ -43,7 +44,6 @@ namespace EstudoDividas.Controllers
         public IActionResult Login([FromBody] LoginRequestContract request)
         {
             var response = _authServices.login(request);
-
             if (response.status != "ok")
                 return BadRequest(response);
             return Ok(response);

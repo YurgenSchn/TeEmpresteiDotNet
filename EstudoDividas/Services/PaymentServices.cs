@@ -3,6 +3,7 @@ using EstudoDividas.Data.MySQL.Entities;
 using EstudoDividas.Data.MySQL;
 using Microsoft.EntityFrameworkCore;
 using EstudoDividas.Contracts.ReturnTypes;
+using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace EstudoDividas.Services
 {
@@ -144,14 +145,19 @@ namespace EstudoDividas.Services
 
         }
 
-        public GetPaymentHistoryResponseContract getPaymentHistory(string userPublicId, string friendPublicId = "")
+        public GetPaymentHistoryResponseContract getPaymentHistory(string userPublicId, string userPrivateId, string friendPublicId = "")
         {
-            if (userPublicId == null) return new()
+            // FILTRO = se o private-public ids do requerente não baterem
+            var isValidRequester = _context.User.Where(u => u.id_private.Equals(userPrivateId) &&
+                                                            u.id_public.Equals(userPublicId)).Any();
+            if (!isValidRequester)
+                return new()
                 {
-                    status = "no_user",
-                    message = "Sem usuário"
+                    status = "bad_auth",
+                    message = "Autenticação inválida"
                 };
 
+            // Checar se o id de amigo é valido
             if (friendPublicId != "")
             {
                 var isFriend = _context.Friend.Where(f => f.confirmed.Equals(true))

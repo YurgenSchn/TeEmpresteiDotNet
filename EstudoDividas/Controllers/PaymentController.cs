@@ -50,11 +50,11 @@ namespace EstudoDividas.Controllers
 
 
         // GET: api/Payment/history
-        //[Authorize(Roles = Roles.usuario)]
+        [Authorize(Roles = Roles.usuario)]
         [HttpGet("history")]
-        public IActionResult getPaymentHistory(string userPublicId)
+        public IActionResult getPaymentHistory(string userPublicId, string userPrivateId)
         {
-            var response = _paymentServices.getPaymentHistory(userPublicId);
+            var response = _paymentServices.getPaymentHistory(userPublicId, userPrivateId);
 
             if (response.status != "ok")
                 return BadRequest(response);
