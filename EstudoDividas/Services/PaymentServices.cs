@@ -196,7 +196,7 @@ namespace EstudoDividas.Services
             var payments = (from p in _context.Payment
                             join us in _context.User on p.sender equals us.id_public
                             join ur in _context.User on p.receiver equals ur.id_public
-                            orderby p.sent_date
+                            orderby p.sent_date descending
                             where (p.sender == userPublicId) ||
                                   (p.receiver == userPublicId)
                             select new PaymentReturnType
