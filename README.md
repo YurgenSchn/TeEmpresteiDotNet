@@ -9,12 +9,13 @@ O objetivo é oferecer uma plataforma de fácil acesso para registrar e visualiz
 
 Quando um usuário "paga" para outro, o sistema calcula o valor emprestado e recebido entre cada amigo, gerando um saldo total e entre amigos, mantendo um histórico compartilhado.
 
-![Current Front-Page](https://cdn.discordapp.com/attachments/1072630091529601106/1079858592183754903/Web_app.png)
+![Current Front-Page](https://cdn.discordapp.com/attachments/1072630091529601106/1081319771976515666/image.png)
 
-👷‍♂️ Estado atual (02/03/23):
+👷‍♂️ Estado atual (03/03/23):
 
-- O saldo é calculado no front-end, usando os pagamentos que já são enviados para a lista.
-- Melhorar sistema de roles, precisa pré-cadastradar no banco de dados ("usuario" e "admin" na tabela access_level)
+- É necessário criar um componente de lista de pagamento, que será reutilizado no resumo entre amigos (TODO).
+- O saldo é calculado junto da lista de pagamentos. É preciso componentizar o saldo também.
+- Melhorar sistema de roles, pois precisa pré-cadastradar no banco de dados para tudo funcionar bem ("usuario" e "admin" na tabela access_level)
 
 ##
 

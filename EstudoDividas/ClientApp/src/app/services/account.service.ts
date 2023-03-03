@@ -18,6 +18,7 @@ export class AccountService {
           window.localStorage.setItem('token', success.token);
           window.localStorage.setItem('userPublicId', success.idPublic);
           window.localStorage.setItem('userPrivateId', success.idPrivate);
+          window.localStorage.setItem('userName', success.name);
           return true;
 },
         error => {
@@ -48,6 +49,7 @@ export class AccountService {
     window.localStorage.removeItem('token');
     window.localStorage.removeItem('userPublicId');
     window.localStorage.removeItem('userPrivateId');
+    window.localStorage.removeItem('userName');
   }
 
   getAuthorizationToken() {
@@ -55,16 +57,23 @@ export class AccountService {
   }
 
   getUserIds(): any {
-    if (window.localStorage.hasOwnProperty('userPublicId'))
+    if (window.localStorage.hasOwnProperty('token'))
       return {
         userPublicId:  window.localStorage.getItem('userPublicId'),
-        userPrivateId: window.localStorage.getItem('userPrivateId')
+        userPrivateId: window.localStorage.getItem('userPrivateId'),
       }
     else
       return {
         userPublicId:  "",
-        userPrivateId: ""
+        userPrivateId: "",
       }
+  }
+
+  getUserName(): any {
+    if (window.localStorage.hasOwnProperty('userName'))
+      return window.localStorage.getItem('userName');
+    else
+      return "";
   }
 
   getTokenExpirationDate(token: string): Date {

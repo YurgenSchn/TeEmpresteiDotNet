@@ -9,7 +9,14 @@ import { AccountService } from '../../services/account.service';
 })
 export class NavMenuComponent {
 
-  constructor(private accountService: AccountService, private router: Router) {}
+  public userName: string;
+
+  constructor(private accountService: AccountService, private router: Router) {
+
+    let name = accountService.getUserName();
+    this.userName = name.charAt(0).toUpperCase() + name.slice(1);
+
+  }
 
   isExpanded = false;
 
