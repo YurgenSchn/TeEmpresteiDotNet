@@ -22,9 +22,9 @@ Quando um usuário "paga" para outro, o sistema calcula o valor emprestado e rec
 ### Entidades do Banco de Dados
 
 #### User
-![Usuario](https://cdn.discordapp.com/attachments/1072630091529601106/1079855233796165712/User.png)
+![Usuario](https://cdn.discordapp.com/attachments/1072630091529601106/1081633168781754518/image.png)
 
-Esta entidade armazena informações pessoais e de autenticação do usuário. As chaves pública e privada são compostas por 16 caracteres ASCII aleatórios, oferencendo uma maneira de validar requisições além do JWT Token. As senhas são armazenadas em hash, por HMACSHA384 (hash com chave fixa).
+Esta entidade armazena informações pessoais e de autenticação do usuário. As chaves pública e privada são compostas por 16 caracteres ASCII aleatórios, oferencendo uma maneira de validar requisições além do JWT Token: o id_privado só é fornecido ao logar. As senhas são armazenadas em hash com chave fixa (HMACSHA384).
 
 ##
 

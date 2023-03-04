@@ -3,7 +3,6 @@ using EstudoDividas.Data.MySQL.Entities;
 using EstudoDividas.Data.MySQL;
 using Microsoft.EntityFrameworkCore;
 using EstudoDividas.Contracts.ReturnTypes;
-using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace EstudoDividas.Services
 {

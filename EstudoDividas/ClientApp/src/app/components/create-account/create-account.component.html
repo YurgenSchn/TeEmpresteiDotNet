@@ -3,9 +3,10 @@
 
   <form class="form-signin" (ngSubmit)="onSubmit()" #form="ngForm">
 
-    <input [(ngModel)]="account.name" name="name" type="text" id="inputName" class="form-control mt-3" placeholder="Nome" required autofocus>
-    <input [(ngModel)]="account.email" name="email" type="email" id="inputEmail" class="form-control mt-3" placeholder="Email" required autofocus>
-    <input [(ngModel)]="account.password" name="password" type="password" id="inputPassword" class="form-control mt-3" placeholder="Senha" required>
+    <input [(ngModel)]="account.name"     name="name"     type="text"     id="inputName"      class="form-control mt-3" placeholder="Nome"    required autofocus>
+    <input [(ngModel)]="account.email"    name="email"    type="email"    id="inputEmail"     class="form-control mt-3" placeholder="Email"   required>
+    <input [(ngModel)]="account.username" name="username" type="text"     id="inputUsername"  class="form-control mt-3" placeholder="Apelido" required>
+    <input [(ngModel)]="account.password" name="password" type="password" id="inputPassword"  class="form-control mt-3" placeholder="Senha"   required>
     <!--<input [(ngModel)]="account.password" name="password_val" type="password" id="inputPassword_val" class="form-control mt-3" placeholder="Confirmar Senha" required>-->
 
     <button class="btn btn-lg btn-primary btn-block mt-4" [disabled]="form.form.invalid" type="submit">Cadastrar</button>

@@ -12,6 +12,7 @@ export class CreateAccountComponent implements OnInit {
   account = {
     name: "",
     email: "",
+    username: "",
     password: ""
   };
 
@@ -26,7 +27,7 @@ export class CreateAccountComponent implements OnInit {
       const registerResult = await this.accountService.register(this.account);
 
       if (registerResult) {
-        const loginResult = await this.accountService.login({ email: this.account.email, password: this.account.password });
+        const loginResult = await this.accountService.login({ username: this.account.username, password: this.account.password });
         console.log(`Login efetuado: ${loginResult}`);
       }
       

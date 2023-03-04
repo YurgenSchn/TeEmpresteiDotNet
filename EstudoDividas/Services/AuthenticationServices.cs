@@ -25,8 +25,8 @@ namespace EstudoDividas.Services
         // Funções principais
         public async Task<LoginResponseContract> login(LoginRequestContract request)
         {
-            // checar se já existe ao menos 1 usuário com este email, depois checar
-            var user = await _context.User.Where(u => u.email.Equals(request.email) && u.password.Equals(ToSHA384(request.password))).FirstOrDefaultAsync();
+            // checar se já existe ao menos 1 usuário com este username, depois checar
+            var user = await _context.User.Where(u => u.username.Equals(request.username) && u.password.Equals(ToSHA384(request.password))).FirstOrDefaultAsync();
             if (user == null)
             {
                 return new()
@@ -70,6 +70,7 @@ namespace EstudoDividas.Services
                 idPublic = user.id_public,
                 idPrivate = user.id_private,
                 name = user.name,
+                username = user.username,
                 token = token
             };
 
@@ -79,21 +80,31 @@ namespace EstudoDividas.Services
         {
             // CHAMADAS ASSÍNCRONAS
             // a. checar se já existe ao menos 1 usuário com este email
+            // b. checar se já existe ao menos 1 usuário com este username
             // b. checar se já a role está cadastrada no banco de dados
-            var taskEmailIsUsed = _context.User.Where(u => u.email.Equals(request.email)).AnyAsync();
+            var taskEmailIsUsed   = _context.User.Where(u => u.email.Equals(request.email)).AnyAsync();
+            var taskUsernameIsUsed = _context.User.Where(u => u.email.Equals(request.email)).AnyAsync();
             var taskIdAccessLevel = _context.AccessLevel.Where(a => a.role.Equals(Roles.usuario)).FirstOrDefaultAsync();
 
 
             // RETORNO ASSÍNCRONO
-            var emailIsUsed   = await taskEmailIsUsed;
-            var idAccessLevel = await taskIdAccessLevel;
+            var emailIsUsed    = await taskEmailIsUsed;
+            var usernameIsUsed = await taskUsernameIsUsed;
+            var idAccessLevel  = await taskIdAccessLevel;
 
             // VALIDAÇÕES DE EMAIL E ROLE NO BANCO
             if (emailIsUsed)
                 return new()
                 {
                     status = "existing_email",
-                    message = "Usuário já cadastrado.",
+                    message = "Email já cadastrado.",
+                };
+
+            if (usernameIsUsed)
+                return new()
+                {
+                    status = "existing_username",
+                    message = "Apelido já cadastrado."
                 };
 
             if (idAccessLevel == null)
@@ -112,8 +123,9 @@ namespace EstudoDividas.Services
                 id_private = ids[0],
                 id_public = ids[1],
                 email = request.email,
-                name = request.name,         // TODO - Hash das credenciais de login
-                password = ToSHA384(request.password), //        antes de enviar ao banco de dados
+                name = request.name,         
+                username = request.username,
+                password = ToSHA384(request.password),
                 id_access_level = idAccessLevel.id
             };
 
